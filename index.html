@@ -9,8 +9,15 @@
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/control_utils/control_utils.js" crossorigin="anonymous"></script>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js" crossorigin="anonymous"></script>
+    
 
     <style>
+        .particle {
+    position: absolute;
+    border-radius: 50%;
+    pointer-events: none;
+    z-index: 99; /* Để pháo hoa hiện lên trên cùng */
+}
         body { margin: 0; overflow: hidden; background-color: #000000; font-family: 'Segoe UI', sans-serif; }
         #canvas-container { width: 100%; height: 10hv; display: block; }
         
@@ -129,6 +136,39 @@
             red: createCustomTexture('red_light'),
             gift: createCustomTexture('gift_red')
         };
+             // Hàm tạo hiệu ứng pháo hoa tại vị trí tay
+function createFirework(x, y) {
+    for (let i = 0; i < 20; i++) {
+        const particle = document.createElement('div');
+        particle.className = 'particle';
+        
+        // Tạo màu ngẫu nhiên cho pháo hoa
+        const colors = ['#ff0000', '#ffd700', '#ffffff', '#00ff00', '#ff00ff'];
+        particle.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+        
+        // Kích thước hạt pháo hoa
+        const size = Math.random() * 6 + 4 + 'px';
+        particle.style.width = size;
+        particle.style.height = size;
+        
+        // Vị trí xuất hiện chính là lòng bàn tay Linh
+        particle.style.left = x + 'px';
+        particle.style.top = y + 'px';
+        
+        document.body.appendChild(particle);
+
+        // Hiệu ứng bay ra xa và mờ dần
+        const destinationX = (Math.random() - 0.5) * 300;
+        const destinationY = (Math.random() - 0.5) * 300;
+
+        particle.animate([
+            { transform: 'translate(0, 0)', opacity: 1 },
+            { transform: `translate(${destinationX}px, ${destinationY}px)`, opacity: 0 }
+        ], {
+            duration: 1000,
+            easing: 'ease-out'
+        }).onfinish = () => particle.remove();
+    }
 
         // ==========================================
         // 2. SYSTEM CONFIG Vandiep
@@ -505,6 +545,17 @@
                     let openDist = 0; tips.forEach(i => openDist += Math.hypot(lm[i].x-wrist.x, lm[i].y-wrist.y));
                     const avgDist = openDist / 4;
                     const pinchDist = Math.hypot(lm[4].x-lm[8].x, lm[4].y-lm[8].y);
+                if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
+    const landmarks = results.multiHandLandmarks[0];
+    
+    // Nếu khoảng cách ngón cái và ngón út xa nhau (xòe tay)
+    if (Math.abs(landmarks[4].x - landmarks[20].x) > 0.4) {
+        // Lấy tọa độ lòng bàn tay để bắn pháo hoa
+        const palmX = (1 - landmarks[9].x) * window.innerWidth;
+        const palmY = landmarks[9].y * window.innerHeight;
+        createFirework(palmX, palmY);
+    }
+}
 
                     if (avgDist < 0.25) { 
                         state = 'TREE'; 
